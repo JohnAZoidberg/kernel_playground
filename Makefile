@@ -4,7 +4,7 @@ obj-m += ramdisk.o
 obj-m += funmod.o
 funmod-objs := funmod_base.o funmod_extension.o
 
-all: module
+all: module userprog
 
 SRC_DIR := $(shell pwd)
 
@@ -22,3 +22,7 @@ help:
 
 clean:
 	$(MAKE) -C $(dev)/lib/modules/*/build M=$(SRC_DIR) clean
+	rm ioctl_user
+
+userprog:
+	gcc -o ioctl_user ioctl_user.c
