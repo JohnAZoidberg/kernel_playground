@@ -2,7 +2,7 @@
 
 obj-m += ramdisk.o
 obj-m += funmod.o
-funmod-objs := funmod_base.o funmod_extension.o
+funmod-objs := funmod_base.o funmod_ioctl.o funmod_sysfs.o
 
 all: module userprog
 
