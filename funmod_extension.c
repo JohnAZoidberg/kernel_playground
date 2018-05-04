@@ -23,10 +23,6 @@
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/init.h>
+#include "funmod.h"
 
 
-static void __exit fun_exit(void)
-{
-	printk(KERN_ALERT "Unloading fun driver");
-}
-module_exit(fun_exit);

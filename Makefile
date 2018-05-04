@@ -1,18 +1,21 @@
 .PHONY: clean help
 
 obj-m += ramdisk.o
-obj-m += funmod_base.o
-obj-m += funmod_extension.o
-funmod-objs := funmod.o
+obj-m += funmod.o
+funmod-objs := funmod_base.o funmod_extension.o
 
 all: module
 
 SRC_DIR := $(shell pwd)
 
-# get the correct $dev variable by launching the following nix-shell
+# get the correct $dev variable by launching the nix-shell
+# but first populate the $dev location by building it
+# nix-build $nixchannels -A linuxPackages_4_14.kernel.dev
 # nix-shell '<nixpkgs>' -A linuxPackages_4_14.kernel
 module:
 	$(MAKE) -C $(dev)/lib/modules/*/build M=$(SRC_DIR) modules
+indie:
+	$(MAKE) -C /home/zoid/media/clone/linux/ M=$(SRC_DIR) modules
 
 help:
 	$(MAKE) -C $(dev)/lib/modules/*/build M=$(SRC_DIR) help
