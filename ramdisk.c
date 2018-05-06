@@ -4,6 +4,9 @@
  *  Created on: 08.12.2017
  *	  Author: Daniel Rutz <info@danielrutz.com>
  *
+ *  07 May 2018: Extended to support multiple disks
+ *        By: Daniel Schaefer <git@danielschaefer.me>
+ *
  *  A very simple ramdisk block driver for the Linux Operating System.
  *  Copyright (C) 2017 Daniel Rutz <info@danielrutz.com>
  *
@@ -26,7 +29,8 @@
 #include <linux/init.h>
 #include <linux/fs.h>
 #include <linux/blkdev.h>
-
+#include <linux/genhd.h>
+#include <linux/version.h>
 
 MODULE_AUTHOR("Daniel Rutz <info@danielrutz.com>");
 MODULE_DESCRIPTION("A simple ramdisk driver");
@@ -100,7 +104,11 @@ static void ramdisk_request(struct request_queue *q)
 static struct kobject *ramdisk_probe(dev_t dev, int *part, void *data)
 {
 	printk(KERN_INFO "Part is: %d.", *part);
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(4,16,0)
+	return get_disk(disks[0]);
+#else
 	return get_disk_and_module(disks[0]);
+#endif
 }
 
 
