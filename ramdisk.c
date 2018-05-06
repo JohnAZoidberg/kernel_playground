@@ -44,7 +44,8 @@ MODULE_PARM_DESC(sector_count, "Count of sectors the ramdisk should contain. One
 
 
 static int major = 0;
-static struct gendisk *disk = NULL;
+#define DEV_COUNT 1
+static struct gendisk *disks[DEV_COUNT];
 static struct request_queue *queue = NULL;
 static DEFINE_SPINLOCK(spinlock);
 static char *memory = NULL;
@@ -99,6 +100,7 @@ static void ramdisk_request(struct request_queue *q)
 // Initialization
 static int __init ramdisk_init(void)
 {
+	int disk;
 	// Allocate the disk space
 	memory = vmalloc(sector_count * SECTOR_SIZE);
 	if (!memory) {
@@ -123,26 +125,28 @@ static int __init ramdisk_init(void)
 		return -ENOMEM;
 	}
 
-	// Allocate a gendisk struct and initialize with the values of our ramdisk
-	disk = alloc_disk(16);
-	if (!disk) {
-		printk(KERN_ERR "Failed to generate gendisk struct!");
-		blk_cleanup_queue(queue);
-		unregister_blkdev(major, "ramdisk");
-		vfree(memory);
-		return -ENOMEM;
+	for (disk = 0; disk < DEV_COUNT; disk++) {
+		// Allocate a gendisk struct and initialize with the values of our ramdisk
+		disks[disk] = alloc_disk(16);
+		if (!disks[disk]) {
+			printk(KERN_ERR "Failed to generate gendisk struct!");
+			blk_cleanup_queue(queue);
+			unregister_blkdev(major, "ramdisk");
+			vfree(memory);
+			return -ENOMEM;
+		}
+
+		disks[disk]->major = major;
+		disks[disk]->first_minor = 0;
+		set_capacity(disks[disk], sector_count);
+		sprintf(disks[disk]->disk_name, "ramdisk");
+		disks[disk]->fops = &bdops;
+		disks[disk]->queue = queue;
+
+		// HELL YEAH, IT WORKED!
+		printk(KERN_INFO "Successfully created ramdisk.");
+		add_disk(disks[disk]);
 	}
-
-	disk->major = major;
-	disk->first_minor = 0;
-	set_capacity(disk, sector_count);
-	sprintf(disk->disk_name, "ramdisk");
-	disk->fops = &bdops;
-	disk->queue = queue;
-
-	// HELL YEAH, IT WORKED!
-	printk(KERN_INFO "Successfully created ramdisk.");
-	add_disk(disk);
 	return 0;
 }
 
@@ -150,10 +154,13 @@ static int __init ramdisk_init(void)
 // Cleanup
 static void __exit ramdisk_exit(void)
 {
+	int disk;
 	// Basically delete everything we created in the init function
 	printk(KERN_INFO "Destroying ramdisk...");
-	del_gendisk(disk);
-	put_disk(disk);
+	for (disk = 0; disk < DEV_COUNT; disk++) {
+		del_gendisk(disks[disk]);
+		put_disk(disks[disk]);
+	}
 	blk_cleanup_queue(queue);
 	unregister_blkdev(major, "ramdisk");
 	vfree(memory);
